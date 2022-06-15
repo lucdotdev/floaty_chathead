@@ -21,5 +21,4 @@ flutter:
       android:
         package: ni.devotion.floaty_head
         pluginClass: FloatyHeadPlugin
-      ios:
-        pluginClass: FloatyHeadPlugin
+     
