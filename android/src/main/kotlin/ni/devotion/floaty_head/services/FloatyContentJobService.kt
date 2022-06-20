@@ -41,7 +41,7 @@ class FloatyContentJobService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if(null != intent && intent.extras != null) {
             val paramsMap = (intent.getSerializableExtra(INTENT_EXTRA_PARAMS_MAP) as HashMap<String, Any>?)
-            assert(paramsMap != null)
+            
             context = this
             val isCloseWindow = intent.getBooleanExtra(INTENT_EXTRA_IS_CLOSE_WINDOW, false)
 

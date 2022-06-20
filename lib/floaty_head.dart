@@ -153,14 +153,14 @@ class FloatyHead {
   ///Set a custom [icon] for the chathead.
   Future<String> setIcon(String assetPath) async {
     final int result =
-        await (_platform.invokeMethod('setIcon', assetPath) as FutureOr<int>);
+        await (_platform.invokeMethod('setIcon', assetPath));
     return result > 0 ? "Icon set" : "There was an error.";
   }
 
   ///Set a custom [Title] to be displayed in the notification bar for the chathead.
   Future<String> setNotificationTitle(String title) async {
     final int result = await (_platform.invokeMethod(
-        'setNotificationTitle', title) as FutureOr<int>);
+        'setNotificationTitle', title));
     return result > 0 ? "Notification Title set" : "There was an error.";
   }
 
@@ -169,21 +169,21 @@ class FloatyHead {
   /// use the default icon launcher.
   Future<String> setNotificationIcon(String assetPath) async {
     final int result = await (_platform.invokeMethod(
-        'setNotificationIcon', assetPath) as FutureOr<int>);
+        'setNotificationIcon', assetPath) );
     return result > 0 ? "NotificationIcon set" : "There was an error.";
   }
 
   /// Set a custom [Close Icon] to be displayed when the chathead is dragged.
   Future<String> setCloseIcon(String assetPath) async {
     final int result = await (_platform.invokeMethod('setCloseIcon', assetPath)
-        as FutureOr<int>);
+       );
     return result > 0 ? "Close Icon set" : "There was an error.";
   }
 
   /// Set a custom [Close Background] to be displayed behind the [Close Icon].
   Future<String> setCloseBackgroundIcon(String assetPath) async {
     final int result = await (_platform.invokeMethod(
-        'setBackgroundCloseIcon', assetPath) as FutureOr<int>);
+        'setBackgroundCloseIcon', assetPath));
     return result > 0 ? "Close Icon Background set" : "There was an error.";
   }
 
