@@ -9,6 +9,7 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import android.widget.FrameLayout
+import android.app.Activity
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.loader.FlutterLoader
@@ -19,6 +20,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.BinaryMessenger
 
 import io.flutter.view.FlutterCallbackInformation
 
@@ -52,12 +54,14 @@ import java.util.HashMap
 import kotlin.collections.List
 
 
-class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
+class FloatyHeadPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
+
+    var activity : Activity?=null
+
     companion object {
         var mBound: Boolean = false
-        lateinit var instance: FloatyHeadPlugin
-
         var context:Context?=null
+        lateinit var instance: FloatyHeadPlugin
         private var channel: MethodChannel? = null
         private var backgroundChannel: MethodChannel? = null
     }
@@ -65,15 +69,20 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
     private val CODE_DRAW_OVER_OTHER_APP_PERMISSION = 2084
     private var sBackgroundFlutterView: FlutterNativeView? = null
 
-   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPluginBinding) {
-        channel = MethodChannel(flutterPluginBinding.getBinaryMessenger(), "FloatyHead")
-        backgroundChannel=MethodChannnel(flutterPluginBinding.getBinaryMessenger(),FloatyHeadBackground)
-        channel.setMethodCallHandler(this)
+    override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        onAttachedToEngine(binding.applicationContext, binding.binaryMessenger)
     }
-    override fun onDetachedFromEngine(@NonNull binding: FlutterPluginBinding?) {
-        channel.setMethodCallHandler(null)
+
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        channel?.setMethodCallHandler(null)
+
     }
-    FloatyHeadPlugin()
+
+    private fun onAttachedToEngine(context: Context, messenger: BinaryMessenger) {
+        instance = this@FloatyHeadPlugin
+        channel = MethodChannel(messenger, METHOD_CHANNEL)
+        channel?.setMethodCallHandler(instance)
+    }
 
 
     fun startCallBackHandler(context: Context) {
@@ -91,16 +100,11 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
             } ?: run {
                 sBackgroundFlutterView = FlutterNativeView(context, true)
                 if(!Managment.sIsIsolateRunning.get()) {
-                    Managment.pluginRegistrantC ?: run {
-                        Log.i("TAG", "Unable to start callBackHandle... as plugin is not registered")
-                        return
-                    }
                     val args = FlutterRunArguments()
                     args.bundlePath = mAppBundlePath
                     args.entrypoint = flutterCallback.callbackName
                     args.libraryPath = flutterCallback.callbackLibraryPath
                     sBackgroundFlutterView!!.runFromBundle(args)
-                    Managment.pluginRegistrantC?.registerWith(sBackgroundFlutterView!!.pluginRegistry)
                     backgroundChannel = MethodChannel(sBackgroundFlutterView!!, BACKGROUND_CHANNEL)
                     Managment.sIsIsolateRunning.set(true)
                 }
@@ -111,7 +115,7 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
 
     fun invokeCallBack( type: String, params: Any) {
         val argumentsList: MutableList<Any> = ArrayList()
-        val preferences = activity.applicationContext.getSharedPreferences(SHARED_PREF_FLOATY_HEAD, 0)
+        val preferences = activity?.applicationContext!!.getSharedPreferences(SHARED_PREF_FLOATY_HEAD, 0)
         val codeCallBackHandle = preferences.getLong(CODE_CALLBACK_HANDLE_KEY, -1)
         if (codeCallBackHandle == -1L) {
             Log.e("TAG", "Back failed, as codeCallBackHandle is null")
@@ -163,23 +167,23 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
     override fun onMethodCall(call: MethodCall, @NonNull result: Result) {
         when (call.method) {
             "start" -> {
-                Managment.globalContext = activity.applicationContext
+                Managment.globalContext = activity?.applicationContext
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(activity)) {
-                    val packageName = activity.packageName
-                    activity.startActivityForResult(
+                    val packageName = activity?.packageName!!
+                    activity?.startActivityForResult(
                             Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")),
                             CODE_DRAW_OVER_OTHER_APP_PERMISSION)
                 } else {
                     mBound = if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
-                        val subIntent = Intent(activity.applicationContext, FloatyContentJobService::class.java)
+                        val subIntent = Intent(activity?.applicationContext!!, FloatyContentJobService::class.java)
                         subIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         subIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                         subIntent.putExtra(INTENT_EXTRA_IS_UPDATE_WINDOW, true)
-                        activity.startService(subIntent)
+                        activity?.startService(subIntent)
                         true
                     } else {
-                        val subIntent = Intent(activity.applicationContext, FloatyContentJobService::class.java)
-                        activity.startForegroundService(subIntent)
+                        val subIntent = Intent(activity?.applicationContext!!, FloatyContentJobService::class.java)
+                        activity?.startForegroundService(subIntent)
                         true
                     }
                 }
@@ -189,9 +193,9 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
                 if(mBound){
                     FloatyContentJobService.instance!!.closeWindow(true)
                     if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q){
-                        activity.stopService(Intent(activity.applicationContext, FloatyContentJobService::class.java))
+                        activity?.stopService(Intent(activity?.applicationContext, FloatyContentJobService::class.java))
                     }else{
-                        activity.startForegroundService(Intent(activity.applicationContext, FloatyContentJobService::class.java))
+                        activity?.startForegroundService(Intent(activity?.applicationContext, FloatyContentJobService::class.java))
                     }
                     mBound = false
                 }
@@ -210,13 +214,13 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
                 layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT)
                 try {
                     headersMap?.let {
-                        headerView = HeaderView(activity.applicationContext, it).view
+                        headerView = HeaderView(activity?.applicationContext!!, it).view
                     }
                     bodyMap?.let {
-                        bodyView = BodyView(activity.applicationContext, it).view
+                        bodyView = BodyView(activity?.applicationContext!!, it).view
                     }
                     footerMap?.let {
-                        footerView = FooterView(activity.applicationContext, it).view
+                        footerView = FooterView(activity?.applicationContext!!, it).view
                     }
                 } catch (except: Exception) {
                     except.printStackTrace()
@@ -230,10 +234,10 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
                     arguments.let {
                         val callBackHandle = (it[0]).toString().toLong()
                         val onClickHandle = (it[1]).toString().toLong()
-                        val preferences = activity.applicationContext!!.getSharedPreferences(SHARED_PREF_FLOATY_HEAD, 0)
+                        val preferences = activity?.applicationContext!!.getSharedPreferences(SHARED_PREF_FLOATY_HEAD, 0)
                         preferences?.edit()?.putLong(CALLBACK_HANDLE_KEY, callBackHandle)!!.apply()
                         preferences.edit()?.putLong(CODE_CALLBACK_HANDLE_KEY, onClickHandle)!!.apply()
-                        startCallBackHandler(activity.applicationContext)
+                        startCallBackHandler(activity?.applicationContext!!)
                         result.success(true)
                     }
                 } catch (ex: Exception) {
@@ -260,13 +264,13 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
         var result = -1
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                val inputStream = activity.applicationContext.assets.open("flutter_assets/$assetPath")
+                val inputStream = activity?.applicationContext!!.assets.open("flutter_assets/$assetPath")
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 Managment.notificationIcon = bitmap
                 result = 1
             } else {
                 val assetLookupKey = FlutterLoader().getLookupKeyForAsset(assetPath)
-                val assetManager = activity.applicationContext.assets
+                val assetManager = activity?.applicationContext!!.assets
                 val assetFileDescriptor = assetManager.openFd(assetLookupKey)
                 val inputStream = assetFileDescriptor.createInputStream()
                 Managment.notificationIcon = BitmapFactory.decodeStream(inputStream)
@@ -282,14 +286,14 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
         var result = -1
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                val inputStream = activity.applicationContext.assets.open("flutter_assets/$assetPath")
+                val inputStream = activity?.applicationContext!!.assets.open("flutter_assets/$assetPath")
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 Managment.backgroundCloseIcon = bitmap
                 result = 1
             }
             else {
                 val assetLookupKey = FlutterLoader().getLookupKeyForAsset(assetPath)
-                val assetManager = activity.applicationContext.assets
+                val assetManager = activity?.applicationContext!!.assets
                 val assetFileDescriptor = assetManager.openFd(assetLookupKey)
                 val inputStream = assetFileDescriptor.createInputStream()
                 Managment.backgroundCloseIcon = BitmapFactory.decodeStream(inputStream)
@@ -305,14 +309,14 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
         var result = -1
         try {
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
-                val inputStream = activity.applicationContext.assets.open("flutter_assets/$assetPath")
+                val inputStream = activity?.applicationContext!!.assets.open("flutter_assets/$assetPath")
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 Managment.closeIcon = bitmap
                 result = 1
             }
             else {
                 val assetLookupKey = FlutterLoader().getLookupKeyForAsset(assetPath)
-                val assetManager = activity.applicationContext.assets
+                val assetManager = activity?.applicationContext!!.assets
                 val assetFileDescriptor = assetManager.openFd(assetLookupKey)
                 val inputStream = assetFileDescriptor.createInputStream()
                 Managment.closeIcon = BitmapFactory.decodeStream(inputStream)
@@ -328,14 +332,14 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
         var result = -1
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                val inputStream = activity.applicationContext.assets.open("flutter_assets/$assetPath")
+                val inputStream = activity?.applicationContext!!.assets.open("flutter_assets/$assetPath")
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 Managment.floatingIcon = bitmap
                 result = 1
             }
             else {
                 val assetLookupKey = FlutterLoader().getLookupKeyForAsset(assetPath)
-                val assetManager = activity.applicationContext.assets
+                val assetManager = activity?.applicationContext!!.assets
                 val assetFileDescriptor = assetManager.openFd(assetLookupKey)
                 val inputStream = assetFileDescriptor.createInputStream()
                 Managment.floatingIcon = BitmapFactory.decodeStream(inputStream)
@@ -350,12 +354,23 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
 
 
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+    if (activity == null) {
+        activity = binding.activity
+    }
+    if(Managment.activity == null){
+        Managment.activity = binding.activity
+    }
 
-      Managment.activity = binding.activity
-      instance = this@FloatyHeadPlugin
+        instance = this@FloatyHeadPlugin
+ 
+    
+  
+     
   }
 
   override fun onDetachedFromActivity() {
+      activity = null;
+      
       //release()
   }
 
@@ -363,6 +378,7 @@ class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
 
       Managment.activity = binding.activity
       instance = this@FloatyHeadPlugin
+      
   }
 
   override fun onDetachedFromActivityForConfigChanges() {

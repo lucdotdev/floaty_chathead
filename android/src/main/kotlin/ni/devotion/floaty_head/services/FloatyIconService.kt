@@ -29,7 +29,7 @@ class FloatyIconService: Service() {
     @SuppressLint("NewApi")
     private fun initNotificationManager() {
         notificationManager ?: run {
-            context?.let {
+             context?.let {
                 notificationManager = it.getSystemService(NotificationManager::class.java)
             } ?: run {
                 Log.e("TAG", "Context is null. Can't show the FloatyNotification")
