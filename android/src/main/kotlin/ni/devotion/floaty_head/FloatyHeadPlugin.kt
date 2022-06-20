@@ -52,7 +52,7 @@ import java.util.HashMap
 import kotlin.collections.List
 
 
-class FloatyHeadPlugin :FlutterActivity(), MethodCallHandler, ActivityAware {
+class FloatyHeadPlugin : FlutterActivity(), MethodCallHandler, ActivityAware {
     companion object {
         var mBound: Boolean = false
         lateinit var instance: FloatyHeadPlugin
@@ -64,6 +64,16 @@ class FloatyHeadPlugin :FlutterActivity(), MethodCallHandler, ActivityAware {
 
     private val CODE_DRAW_OVER_OTHER_APP_PERMISSION = 2084
     private var sBackgroundFlutterView: FlutterNativeView? = null
+
+   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPluginBinding) {
+        channel = MethodChannel(flutterPluginBinding.getBinaryMessenger(), "FloatyHead")
+        backgroundChannel=MethodChannnel(flutterPluginBinding.getBinaryMessenger(),FloatyHeadBackground)
+        channel.setMethodCallHandler(this)
+    }
+    override fun onDetachedFromEngine(@NonNull binding: FlutterPluginBinding?) {
+        channel.setMethodCallHandler(null)
+    }
+    FloatyHeadPlugin()
 
 
     fun startCallBackHandler(context: Context) {

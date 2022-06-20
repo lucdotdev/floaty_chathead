@@ -3,8 +3,8 @@ package ni.devotion.floaty_head.utils
 object Constants {
 
     val CHANNEL = "ni.devotion.floaty_head"
-    val METHOD_CHANNEL = "ni.devotion/floaty_head"
-    val BACKGROUND_CHANNEL = "ni.devotion.floaty_head/background"
+    val METHOD_CHANNEL = "FloatyHead"
+    val BACKGROUND_CHANNEL = "FloatyHeadBackground"
 
     val SHARED_PREF_FLOATY_HEAD = "ni.devotion.floaty_head"
     val CALLBACK_HANDLE_KEY = "callback_handler"

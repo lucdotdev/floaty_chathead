@@ -102,7 +102,7 @@ class FloatyHead {
 
   /// The timer is used when an action is needed to perform after x time has passed.
   Timer? get callback => _callback;
-  static const _platform = const MethodChannel('ni.devotion/floaty_head');
+  static const _platform = const MethodChannel('FloatyHead');
 
   FloatyHead() {
     if (!Platform.isAndroid)
@@ -223,7 +223,7 @@ class FloatyHead {
 /// Notify to the sender/caller that a widget has been pressed.
 void callbackDispatcher() {
   const MethodChannel _backgroundChannel =
-      const MethodChannel('ni.devotion.floaty_head/background');
+      const MethodChannel('FloatyHeadBackground');
   WidgetsFlutterBinding.ensureInitialized();
   _backgroundChannel.setMethodCallHandler((MethodCall call) async {
     final args = call.arguments;
